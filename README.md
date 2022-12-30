@@ -35,7 +35,7 @@ Output (Text, Confidence, BoundingBox):
     ocrmac.OCR('test.png').annotate_PIL()
 ```
 
-![Plot](output.png)
+![Plot](https://github.com/straussmaximilian/ocrmac/blob/main/output.png?raw=true)
 
 ## Functionality
 
@@ -66,8 +66,6 @@ I found the following resources very helpful when implementing this:
 
 ## Contributing
 
-If you have a feature request or a bug report, please post it either as an idea in the discussions or as an issue on the GitHub issue tracker.  If you want to contribute, put a PR for it. You can find more guidelines for contributing and how to get started here. 
+If you have a feature request or a bug report, please post it either as an idea in the discussions or as an issue on the GitHub issue tracker.  If you want to contribute, put a PR for it. You can find more guidelines for contributing and how to get started here.
 
 If you like the project, consider starring it!
-
-
