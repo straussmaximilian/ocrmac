@@ -10,3 +10,5 @@ twine==1.14.0
 Click==7.1.2
 pytest==6.2.4
 black==21.7b0
+pyobjc-framework-Vision
+pillow
