@@ -4,10 +4,10 @@
 
 import pytest
 
-from click.testing import CliRunner
+#from click.testing import CliRunner
 
 from ocrmac import ocrmac
-from ocrmac import cli
+#from ocrmac import cli
 
 
 @pytest.fixture
