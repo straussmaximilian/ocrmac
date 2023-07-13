@@ -1,7 +1,7 @@
 """Main module."""
 
 import io
-import PIL
+import objc
 
 from PIL import ImageFont, ImageDraw, Image
 
@@ -75,34 +75,35 @@ def text_from_image(image, recognition_level="accurate", language_preference=Non
             "Invalid language preference format. Language preference must be a list."
         )
 
-    req = Vision.VNRecognizeTextRequest.alloc().init().autorelease()
+    with objc.autorelease_pool():
+        req = Vision.VNRecognizeTextRequest.alloc().init()
 
-    if recognition_level == "fast":
-        req.setRecognitionLevel_(1)
-    else:
-        req.setRecognitionLevel_(0)
+        if recognition_level == "fast":
+            req.setRecognitionLevel_(1)
+        else:
+            req.setRecognitionLevel_(0)
 
-    if language_preference is not None:
-        req.setRecognitionLanguages_(language_preference)
+        if language_preference is not None:
+            req.setRecognitionLanguages_(language_preference)
 
-    handler = (
-        Vision.VNImageRequestHandler.alloc()
-        .initWithData_options_(pil2buf(image), None)
-        .autorelease()
-    )
-    success = handler.performRequests_error_([req], None)
+        handler = Vision.VNImageRequestHandler.alloc().initWithData_options_(
+            pil2buf(image), None
+        )
 
-    res = []
-    if success:
-        for result in req.results():
+        success = handler.performRequests_error_([req], None)
+        res = []
+        if success:
+            for result in req.results():
+                bbox = result.boundingBox()
+                w, h = bbox.size.width, bbox.size.height
+                x, y = bbox.origin.x, bbox.origin.y
 
-            bbox = result.boundingBox()
-            w, h = bbox.size.width, bbox.size.height
-            x, y = bbox.origin.x, bbox.origin.y
+                res.append((result.text(), result.confidence(), [x, y, w, h]))
 
-            res.append((result.text(), result.confidence(), [x, y, w, h]))
+        req.dealloc()
+        handler.dealloc()
 
-    return res
+        return res
 
 
 class OCR:
@@ -129,7 +130,6 @@ class OCR:
         self.res = None
 
     def recognize(self):
-
         res = text_from_image(
             self.image, self.recognition_level, self.language_preference
         )
