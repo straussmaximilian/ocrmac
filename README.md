@@ -1,5 +1,6 @@
+[![Downloads](https://static.pepy.tech/badge/ocrmac)](https://pepy.tech/project/ocrmac)
 # ocrmac
-A python wrapper to extract text from images on a mac system. Uses the vision framework from Apple. Simply pass a path to an image or a `PIL` image directly and get lists of texts, their confidence and bounding box.
+A small Python wrapper to extract text from images on a Mac system. Uses the vision framework from Apple. Simply pass a path to an image or a `PIL` image directly and get lists of texts, their confidence, and bounding box.
 
 This only works on macOS systems with newer macOS versions (10.15+).
 
@@ -42,9 +43,21 @@ Output (Text, Confidence, BoundingBox):
 - You can pass the path to an image or a PIL image as an object
 - You can use as a class (`ocrmac.OCR`) or function `ocrmac.text_from_image`)
 - You can pass several arguments:
-    - recognition_level: `fast` or `accurate`
-    - language_preference: A list with langages for post-processing, e.g. `['en', 'de']`
+    - `recognition_level`: `fast` or `accurate`
+    - `language_preference`: A list with languages for post-processing, e.g. `['en', 'de']`. 
 - You can get an annotated output either as PIL image (`annotate_PIL`) or matplotlib figure (`annotate_matplotlib`)
+
+#### Example: Select Language Preference
+
+You can set a language preference like so:
+
+```python
+    ocrmac.OCR('test.png',language_preference=['en'])
+```
+
+What abbreviation should you use for your language of choice? [Here](https://www.alchemysoftware.com/livedocs/ezscript/Topics/Catalyst/Language.htm) is an overview of language codes. 
+
+See also this [Example Notebook](https://github.com/straussmaximilian/ocrmac/blob/main/ExampleNotebook.ipynb) for implementation details.
 
 
 ## Speed
@@ -56,16 +69,18 @@ MacBook Pro (14-inch, 2021):
 
 
 ## Technical Background & Motivation
-If you want to do Optical character recognition (OCR) with Python, widely used tools are [`pytesseract`](https://github.com/madmaze/pytesseract) or [`EasyOCR`](https://github.com/JaidedAI/EasyOCR). For me, tesseract never did give great results. EasyOCR did, but it is slow con CPU. While GPU for CUDA, it is not for Mac.  However, as a mac user you might notice that you can, with newer versions, directly copy and paste from images. The built-in OCR functionality is quite good. The underlying functionality for this is [`VNRecognizeTextRequest`](https://developer.apple.com/documentation/vision/vnrecognizetextrequest) from Apple's Vision Framework. Unfortuantely it is in Swift, luckily, a wrapper for this exists. [`pyobjc-framework-Vision`](https://github.com/ronaldoussoren/pyobjc). `ocrmac` utilizes this wrapper and provides an easy interface to use this for OCR.
+If you want to do Optical character recognition (OCR) with Python, widely used tools are [`pytesseract`](https://github.com/madmaze/pytesseract) or [`EasyOCR`](https://github.com/JaidedAI/EasyOCR). For me, tesseract never did give great results. EasyOCR did, but it is slow con CPU. While GPU for CUDA, it is not for Mac. *(Update from 9/2023: Apparently EasyOCR now has mps support for mac.)*  
+In any case, as a Mac user you might notice that you can, with newer versions, directly copy and paste from images. The built-in OCR functionality is quite good. The underlying functionality for this is [`VNRecognizeTextRequest`](https://developer.apple.com/documentation/vision/vnrecognizetextrequest) from Apple's Vision Framework. Unfortunately it is in Swift; luckily, a wrapper for this exists. [`pyobjc-framework-Vision`](https://github.com/ronaldoussoren/pyobjc). `ocrmac` utilizes this wrapper and provides an easy interface to use this for OCR.
 
 I found the following resources very helpful when implementing this:
 - [Gist from RheTbull](https://gist.github.com/RhetTbull/1c34fc07c95733642cffcd1ac587fc4c)
 - [Apple Documentation](https://developer.apple.com/documentation/vision/recognizing_text_in_images/)
 - [Using Pythonista with VNRecognizeTextRequest](https://forum.omz-software.com/topic/6016/recognize-text-from-picture)
 
+I also did a small writeup about OCR on mac in this blogpost on [medium.com](https://betterprogramming.pub/a-practical-guide-to-extract-text-from-images-ocr-in-python-d8c9c30ae74b).
 
 ## Contributing
 
-If you have a feature request or a bug report, please post it either as an idea in the discussions or as an issue on the GitHub issue tracker.  If you want to contribute, put a PR for it. You can find more guidelines for contributing and how to get started here.
+If you have a feature request or a bug report, please post it either as an idea in the discussions or as an issue on the GitHub issue tracker.  If you want to contribute, put a PR for it. Thanks!
 
 If you like the project, consider starring it!
