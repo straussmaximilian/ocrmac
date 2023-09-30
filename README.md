@@ -44,7 +44,7 @@ Output (Text, Confidence, BoundingBox):
 - You can use as a class (`ocrmac.OCR`) or function `ocrmac.text_from_image`)
 - You can pass several arguments:
     - `recognition_level`: `fast` or `accurate`
-    - `language_preference`: A list with languages for post-processing, e.g. `['en', 'de']`. 
+    - `language_preference`: A list with languages for post-processing, e.g. `['en', 'zh', 'de']`. 
 - You can get an annotated output either as PIL image (`annotate_PIL`) or matplotlib figure (`annotate_matplotlib`)
 
 #### Example: Select Language Preference
@@ -55,7 +55,7 @@ You can set a language preference like so:
     ocrmac.OCR('test.png',language_preference=['en'])
 ```
 
-What abbreviation should you use for your language of choice? [Here](https://www.alchemysoftware.com/livedocs/ezscript/Topics/Catalyst/Language.htm) is an overview of language codes. 
+What abbreviation should you use for your language of choice? [Here](https://www.alchemysoftware.com/livedocs/ezscript/Topics/Catalyst/Language.htm) is an overview of language codes, e.g.: `Chinese (Simplified)` -> `zh`, `English` -> `en` ..
 
 See also this [Example Notebook](https://github.com/straussmaximilian/ocrmac/blob/main/ExampleNotebook.ipynb) for implementation details.
 
