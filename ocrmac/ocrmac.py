@@ -192,8 +192,8 @@ class OCR:
             self.recognize()
 
         draw = ImageDraw.Draw(annotated_image)
-        font = ImageFont.truetype("Arial.ttf", fontsize)
-
+        font = ImageFont.truetype("Arial Unicode.ttf", fontsize)
+        
         for _ in self.res:
             text, conf, bbox = _
             x1, y1, x2, y2 = convert_coordinates_pil(
