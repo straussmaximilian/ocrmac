@@ -1,2 +1,2 @@
 pyobjc-framework-Vision
-pillow<=9.4.0
+pillow
