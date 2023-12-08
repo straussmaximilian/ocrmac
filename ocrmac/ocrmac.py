@@ -39,10 +39,10 @@ def convert_coordinates_pil(bbox, im_width, im_height):
     """Convert vision coordinates to PIL coordinates"""
     x, y, w, h = bbox
     x1 = x * im_width
-    y1 = (1 - y) * im_height
+    y2 = (1 - y) * im_height
 
     x2 = x1 + w * im_width
-    y2 = y1 - h * im_height
+    y1 = y2 - h * im_height
 
     return x1, y1, x2, y2
 
