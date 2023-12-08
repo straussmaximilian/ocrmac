@@ -83,7 +83,16 @@ def text_from_image(image, recognition_level="accurate", language_preference=Non
         else:
             req.setRecognitionLevel_(0)
 
+
+
         if language_preference is not None:
+            
+            available_languages = req.supportedRecognitionLanguagesAndReturnError_(None)[0]
+
+            if not set(language_preference).issubset(set(available_languages)):
+                raise ValueError(
+                    f"Invalid language preference. Language preference must be a subset of {available_languages}."
+                )
             req.setRecognitionLanguages_(language_preference)
 
         handler = Vision.VNImageRequestHandler.alloc().initWithData_options_(
@@ -129,13 +138,17 @@ class OCR:
         self.language_preference = language_preference
         self.res = None
 
-    def recognize(self):
+    def recognize(self, px=False):
         res = text_from_image(
             self.image, self.recognition_level, self.language_preference
         )
         self.res = res
+        
+        if px:
+            return [(text, conf, convert_coordinates_pil(bbox, self.image.width, self.image.height)) for text, conf, bbox in res]
 
-        return res
+        else:
+            return res
 
     def annotate_matplotlib(
         self, figsize=(20, 20), color="red", alpha=0.5, fontsize=12

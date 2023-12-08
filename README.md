@@ -44,7 +44,7 @@ Output (Text, Confidence, BoundingBox):
 - You can use as a class (`ocrmac.OCR`) or function `ocrmac.text_from_image`)
 - You can pass several arguments:
     - `recognition_level`: `fast` or `accurate`
-    - `language_preference`: A list with languages for post-processing, e.g. `['en', 'zh', 'de']`. 
+    - `language_preference`: A list with languages for post-processing, e.g. `['en-US', 'zh-Hans', 'de-DE']`. 
 - You can get an annotated output either as PIL image (`annotate_PIL`) or matplotlib figure (`annotate_matplotlib`)
 
 #### Example: Select Language Preference
@@ -52,10 +52,12 @@ Output (Text, Confidence, BoundingBox):
 You can set a language preference like so:
 
 ```python
-    ocrmac.OCR('test.png',language_preference=['en'])
+    ocrmac.OCR('test.png',language_preference=['en-US'])
 ```
 
-What abbreviation should you use for your language of choice? [Here](https://www.alchemysoftware.com/livedocs/ezscript/Topics/Catalyst/Language.htm) is an overview of language codes, e.g.: `Chinese (Simplified)` -> `zh`, `English` -> `en` ..
+What abbreviation should you use for your language of choice? [Here](https://www.alchemysoftware.com/livedocs/ezscript/Topics/Catalyst/Language.htm) is an overview of language codes, e.g.: `Chinese (Simplified)` -> `zh-Hans`, `English` -> `en-US` ..
+
+If you set a wrong language you will see an error message showing the languages available. Note that the `recognition_level` will affect the languages available (fast has fewer)
 
 See also this [Example Notebook](https://github.com/straussmaximilian/ocrmac/blob/main/ExampleNotebook.ipynb) for implementation details.
 
