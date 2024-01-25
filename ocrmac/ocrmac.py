@@ -220,6 +220,6 @@ class OCR:
                 bbox, annotated_image.width, annotated_image.height
             )
             draw.rectangle((x1, y1, x2, y2), outline=color)
-            draw.text((x1, y1), text, font=font, align="left", fill=color)
+            draw.text((x1, y2), text, font=font, align="left", fill=color)
 
         return annotated_image
