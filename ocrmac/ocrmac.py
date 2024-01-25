@@ -17,7 +17,7 @@ except ImportError:
     MATPLOTLIB_AVAILABLE = False
 
 
-def pil2buf(pil_image):
+def pil2buf(pil_image: Image.Image):
     """Convert PIL image to buffer"""
     buffer = io.BytesIO()
     pil_image.save(buffer, format="PNG")
@@ -47,17 +47,23 @@ def convert_coordinates_pil(bbox, im_width, im_height):
     return x1, y1, x2, y2
 
 
-def text_from_image(image, recognition_level="accurate", language_preference=None):
+def text_from_image(
+    image, recognition_level="accurate", language_preference=None
+) -> list[tuple[str, float, tuple[float, float, float, float]]]:
     """
     Helper function to call VNRecognizeTextRequest from Apple's vision framework.
 
-    Args:
-        image (str or PIL image): Path to image or PIL image.
-        recognition_level (str, optional): Recognition level. Defaults to 'accurate'.
-        language_preference (list, optional): Language preference. Defaults to None.
+    :param image: Path to image (str) or PIL Image.Image.
+    :param recognition_level: Recognition level. Defaults to 'accurate'.
+    :param language_preference: Language preference. Defaults to None.
 
-    Returns:
-        list: List of tuples containing the text, the confidence and the bounding box.
+    :returns: List of tuples containing the text, the confidence and the bounding box.
+        Each tuple looks like (text, confidence, (x, y, width, height))
+        The bounding box (x, y, width, height) is composed of numbers between 0 and 1,
+        that represent a percentage from total image (width, height) accordingly.
+        You can use the `convert_coordinates_*` functions to convert them to pixels.
+        For more info, see https://developer.apple.com/documentation/vision/vndetectedobjectobservation/2867227-boundingbox?language=objc
+        and https://developer.apple.com/documentation/vision/vnrectangleobservation?language=objc
     """
 
     if isinstance(image, str):
@@ -138,7 +144,9 @@ class OCR:
         self.language_preference = language_preference
         self.res = None
 
-    def recognize(self, px=False):
+    def recognize(
+        self, px=False
+    ) -> list[tuple[str, float, tuple[float, float, float, float]]]:
         res = text_from_image(
             self.image, self.recognition_level, self.language_preference
         )
@@ -188,7 +196,7 @@ class OCR:
 
         return fig
 
-    def annotate_PIL(self, color="red", fontsize=12):
+    def annotate_PIL(self, color="red", fontsize=12) -> Image.Image:
         """_summary_
 
         Args:
@@ -206,9 +214,8 @@ class OCR:
 
         draw = ImageDraw.Draw(annotated_image)
         font = ImageFont.truetype("Arial Unicode.ttf", fontsize)
-        
-        for _ in self.res:
-            text, conf, bbox = _
+
+        for text, conf, bbox in self.res:
             x1, y1, x2, y2 = convert_coordinates_pil(
                 bbox, annotated_image.width, annotated_image.height
             )

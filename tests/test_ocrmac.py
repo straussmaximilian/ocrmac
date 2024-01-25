@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 """Tests for `ocrmac` package."""
+from tempfile import TemporaryFile
+from unittest import TestCase
 
 import pytest
 
@@ -41,30 +43,54 @@ def test_command_line_interface():
     """
 
 
-def test_ocrmac():
+class Test(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Uncomment these to regenerate test output files
+        # with open("test_output_fast.png", "w+b") as fast, open(
+        #     "test_output_accurate.png", "w+b"
+        # ) as accurate:
+        #     ocrmac.OCR("test.png", recognition_level="fast").annotate_PIL().save(
+        #         fast, format="png"
+        #     )
+        #     ocrmac.OCR("test.png", recognition_level="accurate").annotate_PIL().save(
+        #         accurate, format="png"
+        #     )
 
-    samples = [
-        "GitHub: Let's build from here",
-        "github.com",
-        "Let's build from here",
-        "Harnessed for productivity. Designed for collaboration.",
-        "Celebrated for built-in security. Welcome to the",
-        "platform developers love.",
-        "Email address",
-        "Sign up for GitHub",
-        "Start a free enterprise trial",
-        "Trusted by the world's leading organizations",
-        "Mercedes-Benz",
-    ]
+    def test_ocrmac(self):
+        samples = {
+            "GitHub: Let's build from here • X",
+            "github.com",
+            "Let's build from here",
+            "Harnessed for productivity. Designed for collaboration.",
+            "Celebrated for built-in security. Welcome to the",
+            "platform developers love.",
+            "Email address",
+            "Sign up for GitHub",
+            "Start a free enterprise trial >",
+            "Trusted by the world's leading organizations y",
+            "Mercedes-Benz",
+        }
 
-    annotations = [
-        _[0] for _ in ocrmac.OCR("test.png", recognition_level="accurate").recognize()
-    ]
+        annotations = {
+            str(_[0])
+            for _ in ocrmac.OCR("test.png", recognition_level="accurate").recognize()
+        }
+        self.assertTrue(samples <= annotations)
 
-    for sample in samples:
-        found = False
-        for annotation in annotations:
-            if sample in annotation:
-                found = True
-                break
-        assert found
+    def test_fast(self):
+        annotated = ocrmac.OCR("test.png", recognition_level="fast").annotate_PIL()
+        with TemporaryFile() as output2:
+            annotated.save(output2, format="png")
+            output2.seek(0)
+            with open("test_output_fast.png", "rb") as output:
+                self.assertEqual(output.read(), output2.read())
+
+    def test_accurate(self):
+        annotated = ocrmac.OCR("test.png", recognition_level="accurate").annotate_PIL()
+        with TemporaryFile() as output2:
+            annotated.save(output2, format="png")
+            output2.seek(0)
+            with open("test_output_accurate.png", "rb") as output:
+                self.assertEqual(output.read(), output2.read())
