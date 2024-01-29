@@ -5,6 +5,13 @@ import objc
 
 from PIL import ImageFont, ImageDraw, Image
 
+import sys 
+
+if sys.version_info < (3, 9):
+    from typing import List, Dict, Set, Tuple
+else:
+    List, Tuple = list, tuple
+
 import Vision
 
 try:
@@ -48,14 +55,15 @@ def convert_coordinates_pil(bbox, im_width, im_height):
 
 
 def text_from_image(
-    image, recognition_level="accurate", language_preference=None
-) -> list[tuple[str, float, tuple[float, float, float, float]]]:
+    image, recognition_level="accurate", language_preference=None, confidence_threshold=0.0
+) -> List[Tuple[str, float, Tuple[float, float, float, float]]]:
     """
     Helper function to call VNRecognizeTextRequest from Apple's vision framework.
 
     :param image: Path to image (str) or PIL Image.Image.
     :param recognition_level: Recognition level. Defaults to 'accurate'.
     :param language_preference: Language preference. Defaults to None.
+    :param confidence_threshold: Confidence threshold. Defaults to 0.0.
 
     :returns: List of tuples containing the text, the confidence and the bounding box.
         Each tuple looks like (text, confidence, (x, y, width, height))
@@ -113,7 +121,8 @@ def text_from_image(
                 w, h = bbox.size.width, bbox.size.height
                 x, y = bbox.origin.x, bbox.origin.y
 
-                res.append((result.text(), result.confidence(), [x, y, w, h]))
+                if result.confidence() >= confidence_threshold:
+                    res.append((result.text(), result.confidence(), [x, y, w, h]))
 
         req.dealloc()
         handler.dealloc()
@@ -122,13 +131,14 @@ def text_from_image(
 
 
 class OCR:
-    def __init__(self, image, recognition_level="accurate", language_preference=None):
+    def __init__(self, image, recognition_level="accurate", language_preference=None, confidence_threshold=0.0):
         """OCR class to extract text from images.
 
         Args:
             image (str or PIL image): Path to image or PIL image.
             recognition_level (str, optional): Recognition level. Defaults to 'accurate'.
             language_preference (list, optional): Language preference. Defaults to None.
+            param confidence_threshold: Confidence threshold. Defaults to 0.0.
 
         """
 
@@ -142,13 +152,14 @@ class OCR:
         self.image = image
         self.recognition_level = recognition_level
         self.language_preference = language_preference
+        self.confidence_threshold = confidence_threshold
         self.res = None
 
     def recognize(
         self, px=False
-    ) -> list[tuple[str, float, tuple[float, float, float, float]]]:
+    ) -> List[Tuple[str, float, Tuple[float, float, float, float]]]:
         res = text_from_image(
-            self.image, self.recognition_level, self.language_preference
+            self.image, self.recognition_level, self.language_preference, self.confidence_threshold
         )
         self.res = res
         
