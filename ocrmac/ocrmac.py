@@ -124,9 +124,6 @@ def text_from_image(
                 if result.confidence() >= confidence_threshold:
                     res.append((result.text(), result.confidence(), [x, y, w, h]))
 
-        req.dealloc()
-        handler.dealloc()
-
         return res
 
 
