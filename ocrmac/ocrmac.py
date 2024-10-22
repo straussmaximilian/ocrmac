@@ -55,7 +55,7 @@ def convert_coordinates_pil(bbox, im_width, im_height):
 
 
 def text_from_image(
-    image, recognition_level="accurate", language_preference=None, confidence_threshold=0.0
+    image, recognition_level="accurate", language_preference=None, confidence_threshold=0.0, detail = True
 ) -> List[Tuple[str, float, Tuple[float, float, float, float]]]:
     """
     Helper function to call VNRecognizeTextRequest from Apple's vision framework.
@@ -64,6 +64,7 @@ def text_from_image(
     :param recognition_level: Recognition level. Defaults to 'accurate'.
     :param language_preference: Language preference. Defaults to None.
     :param confidence_threshold: Confidence threshold. Defaults to 0.0.
+    :param detail: Whether to return the bounding box or not. Defaults to True.
 
     :returns: List of tuples containing the text, the confidence and the bounding box.
         Each tuple looks like (text, confidence, (x, y, width, height))
@@ -117,18 +118,21 @@ def text_from_image(
         res = []
         if success:
             for result in req.results():
-                bbox = result.boundingBox()
-                w, h = bbox.size.width, bbox.size.height
-                x, y = bbox.origin.x, bbox.origin.y
-
-                if result.confidence() >= confidence_threshold:
-                    res.append((result.text(), result.confidence(), [x, y, w, h]))
-
+                confidence = result.confidence()
+                if confidence >= confidence_threshold:
+                    if detail:
+                        bbox = result.boundingBox()
+                        x, y = bbox.origin.x, bbox.origin.y
+                        w, h = bbox.size.width, bbox.size.height
+                        res.append((result.text(), confidence, [x, y, w, h]))
+                    else:
+                        res.append(result.text())
+            
         return res
 
 
 class OCR:
-    def __init__(self, image, recognition_level="accurate", language_preference=None, confidence_threshold=0.0):
+    def __init__(self, image, recognition_level="accurate", language_preference=None, confidence_threshold=0.0, detail=True):
         """OCR class to extract text from images.
 
         Args:
@@ -136,7 +140,7 @@ class OCR:
             recognition_level (str, optional): Recognition level. Defaults to 'accurate'.
             language_preference (list, optional): Language preference. Defaults to None.
             param confidence_threshold: Confidence threshold. Defaults to 0.0.
-
+            detail (bool, optional): Whether to return the bounding box or not. Defaults to True.
         """
 
         if isinstance(image, str):
@@ -151,12 +155,13 @@ class OCR:
         self.language_preference = language_preference
         self.confidence_threshold = confidence_threshold
         self.res = None
+        self.detail = detail
 
     def recognize(
         self, px=False
     ) -> List[Tuple[str, float, Tuple[float, float, float, float]]]:
         res = text_from_image(
-            self.image, self.recognition_level, self.language_preference, self.confidence_threshold
+            self.image, self.recognition_level, self.language_preference, self.confidence_threshold, detail=self.detail
         )
         self.res = res
         
@@ -185,6 +190,9 @@ class OCR:
             raise ImportError(
                 "Matplotlib is not available. Please install matplotlib to use this feature."
             )
+        
+        if not self.detail:
+            raise ValueError("Please set detail=True to use this feature.")
 
         if self.res is None:
             self.recognize()
@@ -214,6 +222,9 @@ class OCR:
         Returns:
             _type_: _description_
         """
+        
+        if not self.detail:
+            raise ValueError("Please set detail=True to use this feature.")
 
         annotated_image = self.image.copy()
 
