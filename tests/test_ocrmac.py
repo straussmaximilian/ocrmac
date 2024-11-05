@@ -116,3 +116,10 @@ class Test(TestCase):
         rms = rms_difference(annotated, ref_image)
 
         assert rms < 5.0
+        
+    def test_livetext(self):
+        annotated = ocrmac.OCR(os.path.join(THIS_FOLDER, "test.png"), framework="livetext", language_preference=['en-US']).annotate_PIL()
+        ref_image = Image.open(os.path.join(THIS_FOLDER, "test_output_livetext.png"))
+        rms = rms_difference(annotated, ref_image)
+
+        assert rms < 5.0
