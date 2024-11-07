@@ -70,6 +70,19 @@ MacBook Pro (14-inch, 2021):
 - `fast`: 200 ms ± 4.7 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
 
 
+## About LiveText
+Since MacOS Sonoma, `LiveText` is now supported, which is stronger than the `VisionKit` OCR. You can try this feature by:
+```python
+# Use the OCR class
+from ocrmac import ocrmac
+annotations = ocrmac.OCR('test.png', framework="livetext").recognize()
+print(annotations)
+
+# Or use the helper directly
+annotations = ocrmac.livetext_from_image('test.png').recognize()
+```
+Notice, when using this feature, the `recognition_level` and `confidence_threshold` are not available. The `confidence` output will always be 1.
+
 ## Technical Background & Motivation
 If you want to do Optical character recognition (OCR) with Python, widely used tools are [`pytesseract`](https://github.com/madmaze/pytesseract) or [`EasyOCR`](https://github.com/JaidedAI/EasyOCR). For me, tesseract never did give great results. EasyOCR did, but it is slow on CPU. While there is GPU acceleration with CUDA, this does not work for Mac. *(Update from 9/2023: Apparently EasyOCR now has mps support for Mac.)*  
 In any case, as a Mac user you might notice that you can, with newer versions, directly copy and paste from images. The built-in OCR functionality is quite good. The underlying functionality for this is [`VNRecognizeTextRequest`](https://developer.apple.com/documentation/vision/vnrecognizetextrequest) from Apple's Vision Framework. Unfortunately it is in Swift; luckily, a wrapper for this exists. [`pyobjc-framework-Vision`](https://github.com/ronaldoussoren/pyobjc). `ocrmac` utilizes this wrapper and provides an easy interface to use this for OCR.

@@ -24,6 +24,48 @@ except ImportError:
     MATPLOTLIB_AVAILABLE = False
 
 
+try:
+    from AppKit import NSData, NSImage
+    from CoreFoundation import (
+        CFRunLoopRunInMode,
+        kCFRunLoopDefaultMode,
+        CFRunLoopStop,
+        CFRunLoopGetCurrent,
+    )
+    
+    objc.registerMetaDataForSelector(
+            b"VKCImageAnalyzer",
+            b"processRequest:progressHandler:completionHandler:",
+            {
+                "arguments": {
+                    3: {
+                        "callable": {
+                            "retval": {"type": b"v"},
+                            "arguments": {
+                                0: {"type": b"^v"},
+                                1: {"type": b"d"},
+                            },
+                        }
+                    },
+                    4: {
+                        "callable": {
+                            "retval": {"type": b"v"},
+                            "arguments": {
+                                0: {"type": b"^v"},
+                                1: {"type": b"@"},
+                                2: {"type": b"@"},
+                            },
+                        }
+                    },
+                }
+            },
+        )
+    
+    LIVETEXT_AVAILABLE = True
+except ImportError:
+    LIVETEXT_AVAILABLE = False
+
+
 def pil2buf(pil_image: Image.Image):
     """Convert PIL image to buffer"""
     buffer = io.BytesIO()
@@ -131,12 +173,103 @@ def text_from_image(
         return res
 
 
+def livetext_from_image(image, language_preference=None, detail=True):
+    """
+    Helper function to call VKCImageAnalyzer from Apple's livetext framework.
+
+    :param image: Path to image (str) or PIL Image.Image.
+    :param language_preference: Language preference. Defaults to None.
+    :param detail: Whether to return the bounding box or not. Defaults to True.
+
+    :returns: List of tuples containing the text and the bounding box.
+        Each tuple looks like (text, (x, y, width, height))
+        The bounding box (x, y, width, height) is composed of numbers between 0 and 1,
+        that represent a percentage from total image (width, height) accordingly.
+        You can use the `convert_coordinates_*` functions to convert them to pixels.
+        For more info, see https://developer.apple.com/documentation/vision/vndetectedobjectobservation/2867227-boundingbox?language=objc
+        and https://developer.apple.com/documentation/vision/vnrectangleobservation?language=objc
+    """
+
+    if not LIVETEXT_AVAILABLE:
+        raise ImportError(
+            "Invalid framework selected, Livetext is not available. \
+            Please makesure your system is running MacOS Sonoma or later, and essential packages are installed."
+        )
+
+    if isinstance(image, str):
+        image = Image.open(image)
+    elif not isinstance(image, Image.Image):
+        raise ValueError("Invalid image format. Image must be a path or a PIL image.")
+
+    if language_preference is not None and not isinstance(language_preference, list):
+        raise ValueError(
+            "Invalid language preference format. Language preference must be a list."
+        )
+
+    def pil2nsimage(pil_image: Image.Image):
+        image_bytes = io.BytesIO()
+        pil_image.save(image_bytes, format="TIFF")
+        ns_data = NSData.dataWithBytes_length_(
+            image_bytes.getvalue(), len(image_bytes.getvalue())
+        )
+        return NSImage.alloc().initWithData_(ns_data)
+
+    ns_image = pil2nsimage(image)
+
+    # Initialize the image analyzer
+    analyzer = objc.lookUpClass("VKCImageAnalyzer").alloc().init()
+    request = (
+        objc.lookUpClass("VKCImageAnalyzerRequest")
+        .alloc()
+        .initWithImage_requestType_(ns_image, 1)  # VKAnalysisTypeText
+    )
+
+    # Set the language preference
+    if language_preference is not None:
+        request.setLocales_(language_preference)
+
+    result = []
+
+    # Analysis callback functions
+    def process_handler(analysis, error):
+        if error:
+            raise RuntimeError("Error during analysis: " + str(error))
+        else:
+            lines = analysis.allLines()
+            if lines:
+                for line in lines:
+                    for char in line.children():
+                        char_text = char.string()
+                        if detail:
+                            bounding_box = char.quad().boundingBox()
+                            x, y = bounding_box.origin.x, bounding_box.origin.y
+                            w, h = bounding_box.size.width, bounding_box.size.height
+                            # More process on y, it differs from the vision framework
+                            y = 1 - y - h
+                            result.append((char_text, 1.0, [x, y, w, h]))
+                        else:
+                            result.append(char_text)
+
+            CFRunLoopStop(CFRunLoopGetCurrent())
+
+    # Do the analysis
+    analyzer.processRequest_progressHandler_completionHandler_(
+        request, lambda progress: None, process_handler
+    )
+
+    # Loops until the OCR is completed
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 10.0, False)
+
+    return result
+
+
 class OCR:
-    def __init__(self, image, recognition_level="accurate", language_preference=None, confidence_threshold=0.0, detail=True):
+    def __init__(self, image, framework="vision", recognition_level="accurate", language_preference=None, confidence_threshold=0.0, detail=True):
         """OCR class to extract text from images.
 
         Args:
             image (str or PIL image): Path to image or PIL image.
+            framework (str, optional): Framework to use. Defaults to 'vision'.
             recognition_level (str, optional): Recognition level. Defaults to 'accurate'.
             language_preference (list, optional): Language preference. Defaults to None.
             param confidence_threshold: Confidence threshold. Defaults to 0.0.
@@ -149,8 +282,12 @@ class OCR:
             raise ValueError(
                 "Invalid image format. Image must be a path or a PIL image."
             )
+        
+        if framework not in {"vision", "livetext"}:
+            raise ValueError("Invalid framework selected. Framework must be 'vision' or 'livetext'.")
 
         self.image = image
+        self.framework = framework
         self.recognition_level = recognition_level
         self.language_preference = language_preference
         self.confidence_threshold = confidence_threshold
@@ -160,9 +297,14 @@ class OCR:
     def recognize(
         self, px=False
     ) -> List[Tuple[str, float, Tuple[float, float, float, float]]]:
-        res = text_from_image(
-            self.image, self.recognition_level, self.language_preference, self.confidence_threshold, detail=self.detail
-        )
+        if self.framework == "vision":
+            res = text_from_image(
+                self.image, self.recognition_level, self.language_preference, self.confidence_threshold, detail=self.detail
+            )
+        else:
+            res = livetext_from_image(
+                self.image, self.language_preference, detail=self.detail
+            )
         self.res = res
         
         if px:
