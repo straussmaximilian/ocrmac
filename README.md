@@ -46,6 +46,7 @@ Output (Text, Confidence, BoundingBox):
     - `recognition_level`: `fast` or `accurate`
     - `language_preference`: A list with languages for post-processing, e.g. `['en-US', 'zh-Hans', 'de-DE']`. 
 - You can get an annotated output either as PIL image (`annotate_PIL`) or matplotlib figure (`annotate_matplotlib`)
+- You can either use the `vision` or the `livetext` framework as backend.
 
 #### Example: Select Language Preference
 
@@ -65,9 +66,10 @@ See also this [Example Notebook](https://github.com/straussmaximilian/ocrmac/blo
 ## Speed
 
 Timings for the  above recognize-statement:
-MacBook Pro (14-inch, 2021):
-- `accurate`: 233 ms ± 1.77 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
-- `fast`: 200 ms ± 4.7 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+MacBook Pro (Apple M3 Max):
+- `accurate`: 207 ms ± 1.49 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
+- `fast`: 131 ms ± 702 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
+- `livetext`: 174 ms ± 4.12 ms per loop (mean ± std. dev. of 7 runs, 1 loop each)
 
 
 ## About LiveText

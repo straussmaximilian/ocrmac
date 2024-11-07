@@ -13,6 +13,7 @@ else:
     List, Tuple = list, tuple
 
 import Vision
+import inspect
 
 try:
     import matplotlib
@@ -285,6 +286,18 @@ class OCR:
         
         if framework not in {"vision", "livetext"}:
             raise ValueError("Invalid framework selected. Framework must be 'vision' or 'livetext'.")
+        
+        if framework == 'livetext':
+            sig = inspect.signature(self.__init__)
+
+            default_recognition_level = sig.parameters['recognition_level'].default
+            default_confidence_threshold = sig.parameters['confidence_threshold'].default
+
+            if recognition_level != default_recognition_level:
+                raise ValueError(f"Recognition level is not supported for Livetext framework. Please use the default value `{default_recognition_level}` or don't pass an argument.")
+            if confidence_threshold != default_confidence_threshold:
+                raise ValueError(f"Confidence threshold is not supported for Livetext framework. Please use the default value `{default_confidence_threshold}` or don't pass an argument.")
+            
 
         self.image = image
         self.framework = framework
@@ -301,10 +314,13 @@ class OCR:
             res = text_from_image(
                 self.image, self.recognition_level, self.language_preference, self.confidence_threshold, detail=self.detail
             )
-        else:
+        elif self.framework == "livetext":
             res = livetext_from_image(
                 self.image, self.language_preference, detail=self.detail
             )
+        else:
+            raise ValueError("Invalid framework selected. Framework must be 'vision' or 'livetext'.")
+
         self.res = res
         
         if px:
