@@ -56,7 +56,7 @@ You can set a language preference like so:
     ocrmac.OCR('test.png',language_preference=['en-US'])
 ```
 
-What abbreviation should you use for your language of choice? [Here](https://www.alchemysoftware.com/livedocs/ezscript/Topics/Catalyst/Language.htm) is an overview of language codes, e.g.: `Chinese (Simplified)` -> `zh-Hans`, `English` -> `en-US` ..
+What abbreviation should you use for your language of choice? [Here](https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry) is an overview of language codes, e.g.: `Chinese (Simplified)` -> `zh-Hans`, `English` -> `en-US` ..
 
 If you set a wrong language you will see an error message showing the languages available. Note that the `recognition_level` will affect the languages available (fast has fewer)
 
