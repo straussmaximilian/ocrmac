@@ -157,9 +157,14 @@ def text_from_image(
             pil2buf(image), None
         )
 
-        success = handler.performRequests_error_([req], None)
+        ret = handler.performRequests_error_([req], None)
+        # PyObjC returns either a bool or a (bool, NSError|None) tuple depending on the signature mapping.
+        if isinstance(ret, tuple):
+            ok, err = ret
+        else:
+            ok, err = bool(ret), None
         res = []
-        if success:
+        if ok and err is None:
             for result in req.results():
                 confidence = result.confidence()
                 if confidence >= confidence_threshold:
