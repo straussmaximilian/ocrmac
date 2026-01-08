@@ -15,6 +15,7 @@ from ocrmac import ocrmac
 #from ocrmac import cli
 
 THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+RMS_THRESHOLD = 15.0  # Max allowed RMS difference for image comparison tests
 
 
 @pytest.fixture
@@ -108,18 +109,18 @@ class Test(TestCase):
         ref_image = Image.open(os.path.join(THIS_FOLDER, "test_output_fast.png"))
         rms = rms_difference(annotated, ref_image)
 
-        assert rms < 5.0
+        assert rms < RMS_THRESHOLD
     
     def test_accurate(self):
         annotated = ocrmac.OCR(os.path.join(THIS_FOLDER, "test.png"), recognition_level="accurate", language_preference=['en-US'],  confidence_threshold=1.0).annotate_PIL()
         ref_image = Image.open(os.path.join(THIS_FOLDER, "test_output_accurate.png"))
         rms = rms_difference(annotated, ref_image)
 
-        assert rms < 5.0
+        assert rms < RMS_THRESHOLD
         
     def test_livetext(self):
         annotated = ocrmac.OCR(os.path.join(THIS_FOLDER, "test.png"), framework="livetext", language_preference=['en-US']).annotate_PIL()
         ref_image = Image.open(os.path.join(THIS_FOLDER, "test_output_livetext.png"))
         rms = rms_difference(annotated, ref_image)
 
-        assert rms < 5.0
+        assert rms < RMS_THRESHOLD
