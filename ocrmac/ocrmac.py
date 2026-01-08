@@ -157,9 +157,14 @@ def text_from_image(
             pil2buf(image), None
         )
 
-        success = handler.performRequests_error_([req], None)
+        ret = handler.performRequests_error_([req], None)
+        # PyObjC returns either a bool or a (bool, NSError|None) tuple depending on the signature mapping.
+        if isinstance(ret, tuple):
+            ok, err = ret
+        else:
+            ok, err = bool(ret), None
         res = []
-        if success:
+        if ok and err is None:
             for result in req.results():
                 confidence = result.confidence()
                 if confidence >= confidence_threshold:
@@ -174,13 +179,16 @@ def text_from_image(
         return res
 
 
-def livetext_from_image(image, language_preference=None, detail=True):
+def livetext_from_image(image, language_preference=None, detail=True, unit='token'):
     """
     Helper function to call VKCImageAnalyzer from Apple's livetext framework.
 
     :param image: Path to image (str) or PIL Image.Image.
     :param language_preference: Language preference. Defaults to None.
     :param detail: Whether to return the bounding box or not. Defaults to True.
+    :param unit: Output granularity for flat results. 'token' (default)
+        returns the finest-grained children (often characters for CJK),
+        'line' returns one entry per line (full line text and its bbox).
 
     :returns: List of tuples containing the text and the bounding box.
         Each tuple looks like (text, (x, y, width, height))
@@ -206,6 +214,9 @@ def livetext_from_image(image, language_preference=None, detail=True):
         raise ValueError(
             "Invalid language preference format. Language preference must be a list."
         )
+    
+    if unit not in {"token", "line"}:
+        raise ValueError("Invalid unit. Must be 'token' or 'line'.")
 
     def pil2nsimage(pil_image: Image.Image):
         image_bytes = io.BytesIO()
@@ -215,57 +226,68 @@ def livetext_from_image(image, language_preference=None, detail=True):
         )
         return NSImage.alloc().initWithData_(ns_data)
 
-    ns_image = pil2nsimage(image)
-
-    # Initialize the image analyzer
-    analyzer = objc.lookUpClass("VKCImageAnalyzer").alloc().init()
-    request = (
-        objc.lookUpClass("VKCImageAnalyzerRequest")
-        .alloc()
-        .initWithImage_requestType_(ns_image, 1)  # VKAnalysisTypeText
-    )
-
-    # Set the language preference
-    if language_preference is not None:
-        request.setLocales_(language_preference)
-
     result = []
+    with objc.autorelease_pool():
+        ns_image = pil2nsimage(image)
 
-    # Analysis callback functions
-    def process_handler(analysis, error):
-        if error:
-            raise RuntimeError("Error during analysis: " + str(error))
-        else:
-            lines = analysis.allLines()
-            if lines:
-                for line in lines:
-                    for char in line.children():
-                        char_text = char.string()
-                        if detail:
-                            bounding_box = char.quad().boundingBox()
-                            x, y = bounding_box.origin.x, bounding_box.origin.y
-                            w, h = bounding_box.size.width, bounding_box.size.height
-                            # More process on y, it differs from the vision framework
-                            y = 1 - y - h
-                            result.append((char_text, 1.0, [x, y, w, h]))
+        # Initialize the image analyzer
+        analyzer = objc.lookUpClass("VKCImageAnalyzer").alloc().init()
+        request = (
+            objc.lookUpClass("VKCImageAnalyzerRequest")
+            .alloc()
+            .initWithImage_requestType_(ns_image, 1)  # VKAnalysisTypeText
+        )
+
+        # Set the language preference
+        if language_preference is not None:
+            request.setLocales_(language_preference)
+
+        # Analysis callback functions
+        def process_handler(analysis, error):
+            if error:
+                raise RuntimeError("Error during analysis: " + str(error))
+            else:
+                lines = analysis.allLines()
+                if lines:
+                    for line in lines:
+                        if unit == 'line':
+                            line_text = line.string()
+                            if detail:
+                                bounding_box = line.quad().boundingBox()
+                                x, y = bounding_box.origin.x, bounding_box.origin.y
+                                w, h = bounding_box.size.width, bounding_box.size.height
+                                y = 1 - y - h  # align with Vision coordinate system
+                                result.append((line_text, 1.0, [x, y, w, h]))
+                            else:
+                                result.append(line_text)
                         else:
-                            result.append(char_text)
+                            for char in line.children():
+                                char_text = char.string()
+                                if detail:
+                                    bounding_box = char.quad().boundingBox()
+                                    x, y = bounding_box.origin.x, bounding_box.origin.y
+                                    w, h = bounding_box.size.width, bounding_box.size.height
+                                    # More process on y, it differs from the vision framework
+                                    y = 1 - y - h
+                                    result.append((char_text, 1.0, [x, y, w, h]))
+                                else:
+                                    result.append(char_text)
 
-            CFRunLoopStop(CFRunLoopGetCurrent())
+                CFRunLoopStop(CFRunLoopGetCurrent())
 
-    # Do the analysis
-    analyzer.processRequest_progressHandler_completionHandler_(
-        request, lambda progress: None, process_handler
-    )
+        # Do the analysis
+        analyzer.processRequest_progressHandler_completionHandler_(
+            request, lambda progress: None, process_handler
+        )
 
-    # Loops until the OCR is completed
-    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 10.0, False)
+        # Loops until the OCR is completed
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, 10.0, False)
 
     return result
 
 
 class OCR:
-    def __init__(self, image, framework="vision", recognition_level="accurate", language_preference=None, confidence_threshold=0.0, detail=True):
+    def __init__(self, image, framework="vision", recognition_level="accurate", language_preference=None, confidence_threshold=0.0, detail=True, unit='token'):
         """OCR class to extract text from images.
 
         Args:
@@ -275,6 +297,9 @@ class OCR:
             language_preference (list, optional): Language preference. Defaults to None.
             param confidence_threshold: Confidence threshold. Defaults to 0.0.
             detail (bool, optional): Whether to return the bounding box or not. Defaults to True.
+            unit (str, optional): LiveText-only flat output granularity.
+                'token' (default) returns fine-grained children, 'line' returns
+                one entry per line. Ignored for Vision.
         """
 
         if isinstance(image, str):
@@ -298,6 +323,8 @@ class OCR:
             if confidence_threshold != default_confidence_threshold:
                 raise ValueError(f"Confidence threshold is not supported for Livetext framework. Please use the default value `{default_confidence_threshold}` or don't pass an argument.")
             
+            if unit not in {"token", "line"}:
+                raise ValueError("Invalid unit. Must be 'token' or 'line'.")
 
         self.image = image
         self.framework = framework
@@ -306,6 +333,7 @@ class OCR:
         self.confidence_threshold = confidence_threshold
         self.res = None
         self.detail = detail
+        self.unit = unit
 
     def recognize(
         self, px=False
@@ -316,7 +344,7 @@ class OCR:
             )
         elif self.framework == "livetext":
             res = livetext_from_image(
-                self.image, self.language_preference, detail=self.detail
+                self.image, self.language_preference, detail=self.detail, unit=self.unit
             )
         else:
             raise ValueError("Invalid framework selected. Framework must be 'vision' or 'livetext'.")
