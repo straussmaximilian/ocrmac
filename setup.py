@@ -2,13 +2,13 @@
 
 """The setup script."""
 
+from pathlib import Path
 from setuptools import setup, find_packages
 
-with open("README.md") as readme_file:
-    readme = readme_file.read()
+here = Path(__file__).parent
 
-with open("HISTORY.md") as history_file:
-    history = history_file.read()
+readme = (here / "README.md").read_text(encoding="utf-8") if (here / "README.md").exists() else ""
+history = (here / "HISTORY.md").read_text(encoding="utf-8") if (here / "HISTORY.md").exists() else ""
 
 requirements = ["Click>=7.0", "pyobjc-framework-Vision", "pillow"]
 
