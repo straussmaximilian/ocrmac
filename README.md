@@ -81,7 +81,7 @@ annotations = ocrmac.OCR('test.png', framework="livetext").recognize()
 print(annotations)
 
 # Or use the helper directly
-annotations = ocrmac.livetext_from_image('test.png').recognize()
+annotations = ocrmac.livetext_from_image('test.png')
 ```
 Notice, when using this feature, the `recognition_level` and `confidence_threshold` are not available. The `confidence` output will always be 1. Additionally, LiveText supports an optional `unit` parameter for flat output: use `unit='line'` to return full-line items (instead of token-level).
 
